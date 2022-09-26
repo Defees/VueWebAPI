@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Domain.Entities
 {
-    public class Like : BaseEntity
+    public class Like : Entity
     {
         public bool Enable { get; set; }
         public DateTime Date { get; set; }

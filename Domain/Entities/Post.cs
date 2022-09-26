@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Domain.Entities
 {
-    public class Post : BaseEntity
+    public class Post : Entity
     {
         public string PostBody { get; set; }
         public DateTime DateCreated { get; set; }

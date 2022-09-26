@@ -64,23 +64,23 @@ namespace Infrastructure.Identity
             throw new Exception();
         }
 
-        public async Task<(string userId, Response response)> Register(RegisterModel model)
+        public async Task<Response> Register(RegisterModel model)
         {
             var userExists = await _userManager.FindByNameAsync(model.Username);
 
             if (userExists != null)
-                return (userExists.Id, new Response { Status = "Error", Message = "User already exists!" });
+                return (new Response { Status = "Error", Message = "User already exists!" });
 
             var user = await CreateUserAsync(model.Username, model.Password);
 
-            return ( user.Id, new Response { Status = "Success", Message = "User created successfully!" });
+            return ( new Response { Status = "Success", Message = "User created successfully!" });
         }
 
-        public async Task<(string userId, Response response)> RegisterAdmin(RegisterModel model)
+        public async Task<Response> RegisterAdmin(RegisterModel model)
         {
             var userExists = await _userManager.FindByNameAsync(model.Username);
             if (userExists != null)
-                return (userExists.Id, new Response { Status = "Error", Message = "User already exists!" });
+                return new Response { Status = "Error", Message = "User already exists!" };
 
             var user = await CreateUserAsync(model.Username, model.Password);
 
@@ -97,7 +97,7 @@ namespace Infrastructure.Identity
             {
                 await _userManager.AddToRoleAsync(user, UserRoles.User);
             }
-            return (user.Id, new Response { Status = "Success", Message = "User created successfully!" });
+            return new Response { Status = "Success", Message = "User created successfully!" };
         }
 
         public async Task<string> GetUserNameAsync(string userId)

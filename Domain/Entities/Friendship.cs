@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Domain.Entities
 {
-    public class Friendship : BaseEntity
+    public class Friendship : Entity
     {
         public DateTime DateConfirmation { get; set; }
         public bool Confirmed { get; set; }

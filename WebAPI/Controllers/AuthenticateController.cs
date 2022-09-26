@@ -38,10 +38,10 @@ namespace WebUI.Controllers
         public async Task<IActionResult> Register([FromBody] RegisterModel model)
         {
             var result = await identityService.Register(model);
-            if (result.response.Status == "Error")
-                return StatusCode(StatusCodes.Status500InternalServerError, result.response);
+            if (result.Status == "Error")
+                return StatusCode(StatusCodes.Status500InternalServerError, result);
 
-            return Ok(result.response);
+            return Ok(result);
         }
 
         [HttpPost]
@@ -49,10 +49,10 @@ namespace WebUI.Controllers
         public async Task<IActionResult> RegisterAdmin([FromBody] RegisterModel model)
         {
             var result = await identityService.RegisterAdmin(model);
-            if (result.response.Status == "Error")
-                return StatusCode(StatusCodes.Status500InternalServerError, result.response);
+            if (result.Status == "Error")
+                return StatusCode(StatusCodes.Status500InternalServerError, result);
 
-            return Ok(result.response);
+            return Ok(result);
         }
     }
 }
