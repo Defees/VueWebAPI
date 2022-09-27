@@ -1,6 +1,7 @@
 ﻿using Application.Interfaces;
 using Application.Models;
 using Domain.Entities;
+using Infrastructure.Identity;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -11,7 +12,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 
-namespace Infrastructure.Identity
+namespace Infrastructure.Services
 {
     public class IdentityService : IIdentityService
     {
@@ -69,11 +70,11 @@ namespace Infrastructure.Identity
             var userExists = await _userManager.FindByNameAsync(model.Username);
 
             if (userExists != null)
-                return (new Response { Status = "Error", Message = "User already exists!" });
+                return new Response { Status = "Error", Message = "User already exists!" };
 
             var user = await CreateUserAsync(model.Username, model.Password);
 
-            return ( new Response { Status = "Success", Message = "User created successfully!" });
+            return new Response { Status = "Success", Message = "User created successfully!" };
         }
 
         public async Task<Response> RegisterAdmin(RegisterModel model)
