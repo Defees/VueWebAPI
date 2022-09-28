@@ -4,6 +4,5 @@ namespace Domain.Exceptions;
 
 public class UserNotFoundException : Exception
 {
-    private UserNotFoundException() : base("User can't be found.") { }
-    public static UserNotFoundException Instance { get; } = new();
+    public UserNotFoundException() : base("User can't be found.") { }
 }

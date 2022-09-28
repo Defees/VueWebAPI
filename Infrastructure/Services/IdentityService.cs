@@ -1,8 +1,14 @@
-﻿using Application.Interfaces;
+﻿using Application.Common.Interfaces;
+using Application.DTOs;
+using Application.Interfaces;
 using Application.Models;
 using Domain.Entities;
+using Domain.Exceptions;
+using Duende.IdentityServer.Models;
 using Infrastructure.Identity;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -11,79 +17,101 @@ using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using System.Threading;
 
 namespace Infrastructure.Services
 {
     public class IdentityService : IIdentityService
     {
+        private readonly IAuthenticateService _authenticateService;
         private readonly UserManager<User> _userManager;
-        private readonly RoleManager<IdentityRole> _roleManager;
-        private readonly IConfiguration _configuration;
-
         private readonly SignInManager<User> _signInManager;
+        private readonly RoleManager<IdentityRole> _roleManager;
         private readonly IUserClaimsPrincipalFactory<User> _userClaimsPrincipalFactory;
         private readonly IAuthorizationService _authorizationService;
+        private readonly IApplicationDbContext _context;
+        private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly IRefreshTokenValidator _refreshTokenValidator;
         public IdentityService(
+            IAuthenticateService authenticateService,
             UserManager<User> userManager,
-            IUserClaimsPrincipalFactory<User> userClaimsPrincipalFactory,
-            IAuthorizationService authorizationService,
             SignInManager<User> signInManager,
             RoleManager<IdentityRole> roleManager,
-            IConfiguration configuration)
+            IUserClaimsPrincipalFactory<User> userClaimsPrincipalFactory,
+            IAuthorizationService authorizationService,
+            IApplicationDbContext context,
+            IHttpContextAccessor httpContextAccessor,
+            IRefreshTokenValidator refreshTokenValidator)
         {
+            _authenticateService = authenticateService;
             _userManager = userManager;
             _userClaimsPrincipalFactory = userClaimsPrincipalFactory;
             _authorizationService = authorizationService;
+            _context = context;
+            _httpContextAccessor = httpContextAccessor;
+            _refreshTokenValidator = refreshTokenValidator;
             _signInManager = signInManager;
             _roleManager = roleManager;
-            _configuration = configuration;
         }
 
-        public async Task<(JwtSecurityToken token, Response response)> Login(LoginModel model)
-        {
-            var user = await _userManager.FindByNameAsync(model.Username);
+        public async Task<IResponse<AuthenticateResponse>> Login(LoginUserRequest request, CancellationToken cancellationToken)
+    {
+        var user = await _userManager.FindByEmailAsync(request.Email);
+        if (user is null) throw new UserNotFoundException();
 
-            if (user != null && await _userManager.CheckPasswordAsync(user, model.Password))
+        var signInResult =
+            await _signInManager.PasswordSignInAsync(user, request.Password, false, false);
+        if (!signInResult.Succeeded) throw new SignInException();
+
+            return Response.Success(await _authenticateService.Authenticate(user, cancellationToken));
+        }
+
+        public async Task<IResponse<bool>> LogOut(CancellationToken cancellationToken)
+        {
+            var userId = _httpContextAccessor.HttpContext?.User.FindFirstValue("id");
+            if (userId is null) throw new UserNotFoundException();
+
+            await _signInManager.SignOutAsync();
+
+            var refreshTokens = await _context.RefreshTokens
+                .Where(x => x.UserId == userId)
+                .ToListAsync(cancellationToken);
+            _context.RefreshTokens.RemoveRange(refreshTokens);
+
+            await _context.SaveChangesAsync(cancellationToken);
+            return Response.Success(true);
+        }
+
+        public async Task<IResponse<User>> Register(RegisterUserRequest request)
+        {
+            var user = new User
             {
-                var userRoles = await _userManager.GetRolesAsync(user);
+                UserName = request.Email,
+                SecurityStamp = Guid.NewGuid().ToString(),
+                Email = request.Email,
+            };
+            var createResult = await _userManager.CreateAsync(user, request.Password);
 
-                var authClaims = new List<Claim>
-                {
-                    new Claim(ClaimTypes.Name, user.UserName),
-                    new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-                };
+            if(!createResult.Succeeded) throw new RegisterException();
 
-                foreach (var userRole in userRoles)
-                {
-                    authClaims.Add(new Claim(ClaimTypes.Role, userRole));
-                }
+            if (!await _roleManager.RoleExistsAsync(UserRoles.User))
+                await _roleManager.CreateAsync(new IdentityRole(UserRoles.User));
 
-                var token = GetToken(authClaims);
-
-                return (token, new Response { Status = "Success", Message = "User login successfully!" });
-            }
-            throw new Exception();
+            if (await _roleManager.RoleExistsAsync(UserRoles.Admin))
+                await _userManager.AddToRoleAsync(user, UserRoles.User);
+       
+            return Response.Success(user);
         }
 
-        public async Task<Response> Register(RegisterModel model)
+        public async Task<IResponse<User>> RegisterAdmin(RegisterUserRequest request)
         {
-            var userExists = await _userManager.FindByNameAsync(model.Username);
-
-            if (userExists != null)
-                return new Response { Status = "Error", Message = "User already exists!" };
-
-            var user = await CreateUserAsync(model.Username, model.Password);
-
-            return new Response { Status = "Success", Message = "User created successfully!" };
-        }
-
-        public async Task<Response> RegisterAdmin(RegisterModel model)
-        {
-            var userExists = await _userManager.FindByNameAsync(model.Username);
-            if (userExists != null)
-                return new Response { Status = "Error", Message = "User already exists!" };
-
-            var user = await CreateUserAsync(model.Username, model.Password);
+            var user = new User
+            {
+                UserName = request.Email,
+                SecurityStamp = Guid.NewGuid().ToString(),
+                Email = request.Email,
+            };
+            var createResult = await _userManager.CreateAsync(user, request.Password);
 
             if (!await _roleManager.RoleExistsAsync(UserRoles.Admin))
                 await _roleManager.CreateAsync(new IdentityRole(UserRoles.Admin));
@@ -91,14 +119,31 @@ namespace Infrastructure.Services
                 await _roleManager.CreateAsync(new IdentityRole(UserRoles.User));
 
             if (await _roleManager.RoleExistsAsync(UserRoles.Admin))
-            {
                 await _userManager.AddToRoleAsync(user, UserRoles.Admin);
-            }
             if (await _roleManager.RoleExistsAsync(UserRoles.Admin))
-            {
                 await _userManager.AddToRoleAsync(user, UserRoles.User);
-            }
-            return new Response { Status = "Success", Message = "User created successfully!" };
+            
+            return Response.Success(user);
+        }
+
+        public async Task<IResponse<AuthenticateResponse>> RefreshToken(RefreshRequest request, CancellationToken cancellationToken)
+        {
+            var refreshRequest = request;
+            var isValidRefreshToken = _refreshTokenValidator.Validate(refreshRequest.RefreshToken);
+            if(!isValidRefreshToken) throw new InvalidRefreshTokenException();
+
+            var refreshToken =
+                await _context.RefreshTokens.FirstOrDefaultAsync(x => x.Token == refreshRequest.RefreshToken,
+                    cancellationToken);
+            if (refreshToken is null) throw new InvalidRefreshTokenException();
+
+            _context.RefreshTokens.Remove(refreshToken);
+            await _context.SaveChangesAsync(cancellationToken);
+
+            var user = await _userManager.FindByIdAsync(refreshToken.UserId);
+            if(user is null) throw new UserNotFoundException();
+
+            return Response.Success(await _authenticateService.Authenticate(user, cancellationToken));
         }
 
         public async Task<string> GetUserNameAsync(string userId)
@@ -106,21 +151,6 @@ namespace Infrastructure.Services
             var user = await _userManager.Users.FirstAsync(u => u.Id == userId);
 
             return user.UserName;
-        }
-        public async Task<User> CreateUserAsync(string userName, string password)
-        {
-            var user = new User
-            {
-                UserName = userName,
-                SecurityStamp = Guid.NewGuid().ToString(),
-                Email = userName,
-            };
-            var result = await _userManager.CreateAsync(user, password);
-
-            if (result.Succeeded)
-                return user;
-            else
-                throw new Exception();
         }
         public async Task<bool> AuthorizeAsync(string userId, string policyName)
         {
@@ -160,19 +190,5 @@ namespace Infrastructure.Services
             return user != null && await _userManager.IsInRoleAsync(user, role);
         }
 
-        public JwtSecurityToken GetToken(List<Claim> authClaims)
-        {
-            var authSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JWT:Secret"]));
-
-            var token = new JwtSecurityToken(
-                issuer: _configuration["JWT:ValidIssuer"],
-                audience: _configuration["JWT:ValidAudience"],
-                expires: DateTime.Now.AddHours(3),
-                claims: authClaims,
-                signingCredentials: new SigningCredentials(authSigningKey, SecurityAlgorithms.HmacSha256)
-                );
-
-            return token;
-        }
     }
 }

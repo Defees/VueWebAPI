@@ -1,7 +1,10 @@
+using Application.Common.Interfaces;
 using Application.Common.Settings;
+using Application.Interfaces;
 using Application.Models;
 using Domain.Entities;
 using Infrastructure.Persistance;
+using Infrastructure.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Identity;
@@ -15,7 +18,19 @@ using System.Text.Json;
 var builder = WebApplication.CreateBuilder(args);
 ConfigurationManager configuration = builder.Configuration;
 
-// For Entity Framework
+var jwtSettings = new JwtSettings();
+builder.Configuration.Bind(nameof(JwtSettings), jwtSettings);
+builder.Services.AddSingleton(jwtSettings);
+
+builder.Services.AddScoped<IApplicationDbContext>(x => x.GetService<ApplicationDbContext>()!);
+builder.Services.AddScoped<ITokenGenerator, TokenGenerator>();
+builder.Services.AddScoped<IAccessTokenService, AccessTokenService>();
+builder.Services.AddScoped<IRefreshTokenService, RefreshTokenService>();
+builder.Services.AddScoped<IRefreshTokenValidator, RefreshTokenValidator>();
+builder.Services.AddScoped<IAuthenticateService, AuthenticateService>();
+
+builder.Services.AddScoped<IIdentityService, IdentityService>();
+
 builder.Services.AddDbContext<ApplicationDbContext>();
 
 builder.Services.AddAuthorization(x =>
@@ -25,7 +40,7 @@ builder.Services.AddAuthorization(x =>
         builder.RequireAuthenticatedUser();
     });
 });
-// For Identity
+
 builder.Services.AddIdentity<User, IdentityRole>(options =>
 {
     options.Password.RequiredLength = 6;
@@ -37,28 +52,28 @@ builder.Services.AddIdentity<User, IdentityRole>(options =>
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddDefaultTokenProviders();
 
-// Adding Authentication
+
 builder.Services.AddAuthentication(x =>
 {
     x.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
     x.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
 })
-            .AddJwtBearer(x =>
-            {
-                var jwtSettings = builder.Services.BuildServiceProvider().GetService<JwtSettings>()!;
-                x.SaveToken = true;
-                x.RequireHttpsMetadata = false;
-                x.TokenValidationParameters = new TokenValidationParameters
-                {
-                    ValidateIssuerSigningKey = true,
-                    ValidateIssuer = true,
-                    ValidateAudience = true,
-                    ValidateLifetime = true,
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.AccessTokenSecret)),
-                    ValidIssuer = jwtSettings.Issuer,
-                    ValidAudience = jwtSettings.Audience
-                };
-            });
+    .AddJwtBearer(x =>
+    {
+        x.SaveToken = true;
+        x.RequireHttpsMetadata = false;
+        x.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuerSigningKey = true,
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.AccessTokenSecret)),
+            ValidIssuer = jwtSettings.Issuer,
+            ValidAudience = jwtSettings.Audience,
+            ClockSkew = TimeSpan.Zero
+        };
+    });
 
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -77,19 +92,19 @@ builder.Services.AddSwaggerGen(c =>
     });
 
     c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
             {
+                Reference = new OpenApiReference
                 {
-                    new OpenApiSecurityScheme
-                    {
-                        Reference = new OpenApiReference
-                        {
-                            Type = ReferenceType.SecurityScheme,
-                            Id = JwtBearerDefaults.AuthenticationScheme
-                        }
-                    },
-                    Array.Empty<string>()
+                    Type = ReferenceType.SecurityScheme,
+                    Id = JwtBearerDefaults.AuthenticationScheme
                 }
-            });
+            },
+            Array.Empty<string>()
+        }
+    });
 });
 
 var app = builder.Build();
@@ -118,7 +133,6 @@ app.UseExceptionHandler(builder =>
 });
 app.UseHttpsRedirection();
 
-// Authentication & Authorization
 app.UseAuthentication();
 app.UseAuthorization();
 

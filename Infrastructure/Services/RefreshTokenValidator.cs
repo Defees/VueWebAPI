@@ -32,7 +32,7 @@ public class RefreshTokenValidator : IRefreshTokenValidator
         try
         {
             jwtSecurityTokenHandler.ValidateToken(refreshToken, validationParameters,
-                out SecurityToken _);
+                out SecurityToken validatedToken);
             return true;
         }
         catch (Exception)

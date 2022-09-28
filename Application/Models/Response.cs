@@ -19,7 +19,9 @@ public static class Response
 
     public static IResponse<T> Success<T>(T data)
         => new Response<T>(data, true);
+
 }
+
 
 public class Response<T> : IResponse<T>
 {
