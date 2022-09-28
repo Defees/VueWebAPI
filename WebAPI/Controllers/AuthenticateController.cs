@@ -1,4 +1,5 @@
-﻿using Application.Models;
+﻿using Application.DTOs;
+using Application.Models;
 using Infrastructure.Services;
 using Microsoft.AspNetCore.Mvc;
 using System.IdentityModel.Tokens.Jwt;
@@ -10,7 +11,7 @@ namespace WebUI.Controllers
     public class AuthenticateController : ControllerBase
     {
         private readonly IdentityService identityService;
-
+        CancellationToken cancellationToken = new();
         public AuthenticateController(
             IdentityService identityService)
         {
@@ -19,15 +20,15 @@ namespace WebUI.Controllers
 
         [HttpPost]
         [Route("login")]
-        public async Task<IActionResult> Login([FromBody] LoginModel model)
+        public async Task<IActionResult> Login([FromBody] LoginUserRequest request)
         {
-            var result =  await identityService.Login(model);
-            if (result.response.Status != "Error") 
+            var result =  await identityService.Login(request, cancellationToken);
+            if (result.Succeeded) 
             {
                 return Ok(new
                 {
-                    token = new JwtSecurityTokenHandler().WriteToken(result.token),
-                    expiration = result.token.ValidTo
+                    accessToken = result.Data.AccessToken,
+                    refreshToken = result.Data.RefreshToken
                 });
             }
             return Unauthorized();
@@ -35,24 +36,26 @@ namespace WebUI.Controllers
 
         [HttpPost]
         [Route("register")]
-        public async Task<IActionResult> Register([FromBody] RegisterModel model)
+        public async Task<IActionResult> Register([FromBody] RegisterUserRequest request)
         {
-            var result = await identityService.Register(model);
-            if (result.Status == "Error")
-                return StatusCode(StatusCodes.Status500InternalServerError, result);
-
-            return Ok(result);
+            var result = await identityService.Register(request);
+            if (result.Succeeded)
+            {
+                return Ok(result.Succeeded);
+            }
+            return BadRequest();
         }
 
         [HttpPost]
-        [Route("register-admin")]
-        public async Task<IActionResult> RegisterAdmin([FromBody] RegisterModel model)
+        [Route("register/admin")]
+        public async Task<IActionResult> RegisterAdmin([FromBody] RegisterUserRequest request)
         {
-            var result = await identityService.RegisterAdmin(model);
-            if (result.Status == "Error")
-                return StatusCode(StatusCodes.Status500InternalServerError, result);
-
-            return Ok(result);
+            var result = await identityService.RegisterAdmin(request);
+            if (result.Succeeded)
+            {
+                return Ok(result.Succeeded);
+            }
+            return BadRequest();
         }
     }
 }
