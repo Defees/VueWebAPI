@@ -55,6 +55,8 @@ builder.Services.AddIdentity<User, IdentityRole>(options =>
 
 builder.Services.AddAuthentication(x =>
 {
+    x.DefaultScheme = IdentityConstants.ApplicationScheme;
+    x.DefaultSignInScheme = IdentityConstants.ExternalScheme;
     x.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
     x.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
 })

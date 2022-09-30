@@ -13,15 +13,19 @@ namespace Infrastructure.Persistance.Configurations
     {
         public void Configure(EntityTypeBuilder<Friend> builder)
         {
-            builder.ToTable("Friend");
+            builder.ToTable("Friends");
             builder.HasKey(friend => friend.Id);
             builder.HasIndex(friend => friend.Id).IsUnique();
             builder.HasOne(friend => friend.RequestedTo)
                     .WithMany(user => user.ReceievedFriendRequests)
-                    .HasForeignKey(friend => friend.RequestedToId);
+                    .HasForeignKey(friend => friend.RequestedToId)
+                    .OnDelete(DeleteBehavior.Restrict)
+                    .IsRequired();
             builder.HasOne(friend => friend.RequestedBy)
                     .WithMany(user => user.SentFriendRequests)
-                    .HasForeignKey(friend => friend.RequestedById);
+                    .HasForeignKey(friend => friend.RequestedById)
+                    .OnDelete(DeleteBehavior.Restrict)
+                    .IsRequired();
         }
     }
 }
