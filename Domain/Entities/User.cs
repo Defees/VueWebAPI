@@ -2,7 +2,7 @@
 
 namespace Domain.Entities
 {
-    public class User : IdentityUser
+    public class User : IdentityUser<int>
     {
         public DateTime RegistrationDate { get; set; }
 
