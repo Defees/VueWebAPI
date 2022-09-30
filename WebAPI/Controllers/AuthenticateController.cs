@@ -1,8 +1,6 @@
 ﻿using Application.DTOs;
-using Application.Models;
 using Infrastructure.Services;
 using Microsoft.AspNetCore.Mvc;
-using System.IdentityModel.Tokens.Jwt;
 
 namespace WebUI.Controllers
 {
