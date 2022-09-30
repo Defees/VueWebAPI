@@ -8,6 +8,7 @@ using Infrastructure.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -31,7 +32,18 @@ builder.Services.AddScoped<IAuthenticateService, AuthenticateService>();
 
 builder.Services.AddScoped<IIdentityService, IdentityService>();
 
-builder.Services.AddDbContext<ApplicationDbContext>();
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+{
+    options.UseSqlServer(configuration.GetConnectionString("DefaultConnection"),
+        builder =>
+        {
+            builder.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName);
+            //EF allows you to specify that a given LINQ query should be split into multiple SQL queries.
+            //Instead of JOINs, split queries generate an additional SQL query for each included collection navigation
+            //More about that: https://docs.microsoft.com/en-us/ef/core/querying/single-split-queries
+            builder.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery);
+        });
+});
 
 builder.Services.AddAuthorization(x =>
 {

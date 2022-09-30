@@ -4,7 +4,6 @@ namespace Domain.Entities
 {
     public class User : IdentityUser
     {
-        public string Alias { get; set; }
         public DateTime RegistrationDate { get; set; }
         public byte[]? ProfilePicture { get; set; } 
         public List<Friend> SentFriendRequests { get; set; } = new List<Friend>();

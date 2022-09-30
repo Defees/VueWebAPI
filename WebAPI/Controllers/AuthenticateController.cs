@@ -1,4 +1,5 @@
 ﻿using Application.DTOs;
+using Application.Interfaces;
 using Infrastructure.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -8,10 +9,10 @@ namespace WebUI.Controllers
     [ApiController]
     public class AuthenticateController : ControllerBase
     {
-        private readonly IdentityService identityService;
+        private readonly IIdentityService identityService;
         CancellationToken cancellationToken = new();
         public AuthenticateController(
-            IdentityService identityService)
+            IIdentityService identityService)
         {
             this.identityService = identityService;
         }
@@ -52,6 +53,22 @@ namespace WebUI.Controllers
             if (result.Succeeded)
             {
                 return Ok(result.Succeeded);
+            }
+            return BadRequest();
+        }
+
+        [HttpPost]
+        [Route("refreshtoken")]
+        public async Task<IActionResult> RefreshToken([FromBody] RefreshRequest request)
+        {
+            var result = await identityService.RefreshToken(request, cancellationToken);
+            if (result.Succeeded)
+            {
+                return Ok(new
+                {
+                    accessToken = result.Data.AccessToken,
+                    refreshToken = result.Data.RefreshToken
+                });
             }
             return BadRequest();
         }

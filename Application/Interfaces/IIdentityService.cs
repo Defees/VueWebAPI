@@ -11,6 +11,7 @@ namespace Application.Interfaces
         Task<IResponse<bool>> LogOut(CancellationToken cancellationToken);
         Task<IResponse<User>> Register(RegisterUserRequest request);
         Task<IResponse<User>> RegisterAdmin(RegisterUserRequest request);
+        Task<IResponse<AuthenticateResponse>> RefreshToken(RefreshRequest request, CancellationToken cancellationToken);
         Task<string> GetUserNameAsync(string userId);
         Task<bool> IsInRoleAsync(string userId, string role);
         Task<bool> AuthorizeAsync(string userId, string policyName);

@@ -38,10 +38,6 @@ namespace Infrastructure.Persistance
             }
             return await base.SaveChangesAsync(cancellationToken);
         }
-        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-        {
-            optionsBuilder.UseSqlServer(@"Server=(localdb)\mssqllocaldb;Database=mobileappdb;Trusted_Connection=True;");
-        }
         protected override void OnModelCreating(ModelBuilder builder)
         {
             //builder.ApplyConfiguration(new ChatConfiguration());
