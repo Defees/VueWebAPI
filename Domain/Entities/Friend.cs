@@ -14,9 +14,9 @@ namespace Domain.Entities
         public DateTime? RequestTime { get; set; }
         public DateTime? BecameFriendsTime { get; set; }
         public FriendRequestFlag FriendRequestFlag { get; set; }
-        public int RequestedById { get; set; }
+        public string RequestedById { get; set; }
         public User RequestedBy { get; set; }
-        public int RequestedToId { get; set; }
+        public string RequestedToId { get; set; }
         public User RequestedTo { get; set; }
 
         [NotMapped]

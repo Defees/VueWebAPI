@@ -10,9 +10,9 @@ namespace Domain.Entities
     public class Message : AuditableEntity
     {
         public string MessageBody { get; set; }
-        public int UserId { get; set; }
+        public string UserId { get; set; }
         public User User { get; set; }
-        public int ChatId { get; set; }
+        public string ChatId { get; set; }
         public Chat Chat { get; set; }
     }
 }

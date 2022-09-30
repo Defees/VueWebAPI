@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Domain.Entities
 {
-    public class User : IdentityUser<int>
+    public class User : IdentityUser
     {
         [Required]
         public string Alias { get; set; }
