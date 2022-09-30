@@ -8,7 +8,7 @@ namespace Application.Common.Interfaces;
 public interface IApplicationDbContext
 {
     public DbSet<Chat> Chats { get; set; }
-    public DbSet<Friendship> Friendships { get; set; }
+    public DbSet<Friend> Friendships { get; set; }
     public DbSet<Like> Likes { get; set; }
     public DbSet<Message> Messages { get; set; }
     public DbSet<Post> Posts { get; set; }

@@ -7,11 +7,9 @@ using System.Threading.Tasks;
 
 namespace Domain.Entities
 {
-    public class Post : Entity
+    public class Post : AuditableEntity
     {
         public string PostBody { get; set; }
-        public DateTime DateCreated { get; set; }
-
         public int UserId { get; set; }
         public User User { get; set; }
         public List<Like> Likes { get; set; } = new List<Like>();

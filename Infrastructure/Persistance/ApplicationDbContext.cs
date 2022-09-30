@@ -10,7 +10,7 @@ namespace Infrastructure.Persistance
     public class ApplicationDbContext : IdentityDbContext<User>, IApplicationDbContext
     {
         public virtual DbSet<Chat> Chats { get; set; }
-        public virtual DbSet<Friendship> Friendships { get; set; }
+        public virtual DbSet<Friend> Friendships { get; set; }
         public virtual DbSet<Like> Likes { get; set; }
         public virtual DbSet<Message> Messages { get; set; }
         public virtual DbSet<Post> Posts { get; set; }

@@ -17,7 +17,6 @@ namespace Infrastructure.Persistance.Configurations
             builder.HasKey(message => message.Id);
             builder.HasIndex(message => message.Id).IsUnique();
             builder.Property(message => message.MessageBody).HasMaxLength(500);
-            builder.Property(message => message.DateCreated).HasDefaultValue(DateTime.UtcNow);
         }
     }
 }

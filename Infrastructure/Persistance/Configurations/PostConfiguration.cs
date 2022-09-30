@@ -17,7 +17,6 @@ namespace Infrastructure.Persistance.Configurations
             builder.HasKey(post => post.Id);
             builder.HasIndex(post => post.Id).IsUnique();
             builder.Property(post => post.PostBody).HasMaxLength(500);
-            builder.Property(post => post.DateCreated).HasDefaultValue(DateTime.UtcNow);
         }
     }
 }

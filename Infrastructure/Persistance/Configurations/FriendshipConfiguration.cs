@@ -9,14 +9,19 @@ using System.Threading.Tasks;
 
 namespace Infrastructure.Persistance.Configurations
 {
-    public class FriendshipConfiguration : IEntityTypeConfiguration<Friendship>
+    public class FriendshipConfiguration : IEntityTypeConfiguration<Friend>
     {
-        public void Configure(EntityTypeBuilder<Friendship> builder)
+        public void Configure(EntityTypeBuilder<Friend> builder)
         {
-            builder.ToTable("Friendship");
-            builder.HasKey(friendship => friendship.Id);
-            builder.HasIndex(friendship => friendship.Id).IsUnique();
-            builder.HasAlternateKey(friendship => new { friendship.User1, friendship.User2});
+            builder.ToTable("Friend");
+            builder.HasKey(friend => friend.Id);
+            builder.HasIndex(friend => friend.Id).IsUnique();
+            builder.HasOne(friend => friend.RequestedTo)
+                    .WithMany(user => user.ReceievedFriendRequests)
+                    .HasForeignKey(friend => friend.RequestedToId);
+            builder.HasOne(friend => friend.RequestedBy)
+                    .WithMany(user => user.SentFriendRequests)
+                    .HasForeignKey(friend => friend.RequestedById);
         }
     }
 }

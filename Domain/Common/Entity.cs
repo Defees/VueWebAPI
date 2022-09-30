@@ -8,15 +8,15 @@ namespace Domain.Common
 {
     public interface IEntity
     {
-        public long Id { get; set; }
+        public int Id { get; set; }
     }
     public abstract class Entity : IEntity
     {
-        public long Id { get; set; }
+        public int Id { get; set; }
 
         protected Entity() { }
 
-        protected Entity(long id) { Id = id; }
+        protected Entity(int id) { Id = id; }
 
         public override bool Equals(object? obj)
         {
