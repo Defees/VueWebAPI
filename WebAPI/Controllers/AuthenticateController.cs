@@ -34,6 +34,14 @@ namespace WebUI.Controllers
         }
 
         [HttpPost]
+        [Route("logout")]
+        public async Task<IActionResult> LogOut(CancellationToken cancellationToken)
+        {
+            var result = await identityService.LogOut(cancellationToken);
+            return Ok(result.Succeeded);
+        }
+
+        [HttpPost]
         [Route("register")]
         public async Task<IActionResult> Register([FromBody] RegisterUserRequest request)
         {
